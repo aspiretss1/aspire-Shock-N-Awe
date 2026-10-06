@@ -6,6 +6,11 @@ import type { CSSProperties, ReactNode } from 'react';
 
 import { cn } from 'components/ui/utils';
 import { resolveAction } from './actions';
+import {
+  aspirePdfFilename,
+  pdfHrefForItem,
+  triggerItemDownload,
+} from './downloadFile';
 import { track } from './track';
 import type { ResolvedItem } from './types';
 import { KIND_LABEL, useScene } from './useSceneItem';
@@ -88,6 +93,40 @@ export function SceneItemButton({ item, style, showOutlines }: Props) {
   }
 
   if (action.type === 'download') {
+    const asPdf =
+      Boolean(pdfHrefForItem(item)) ||
+      /\.pdf($|\?)/i.test(action.href) ||
+      Boolean(action.filename?.toLowerCase().endsWith('.pdf'));
+
+    if (asPdf) {
+      return (
+        <button
+          type="button"
+          aria-label={label}
+          title={item.hint}
+          style={mergedStyle}
+          className={WRAP}
+          onClick={() => {
+            void triggerItemDownload({
+              sceneId: config.id,
+              itemId: item.id,
+              filename: aspirePdfFilename(item.label),
+            })
+              .then(() =>
+                track({
+                  event: 'scene_download',
+                  sceneId: config.id,
+                  itemId: item.id,
+                }),
+              )
+              .catch(err => console.error('[scene] download failed', err));
+          }}
+        >
+          {wrap(label)}
+        </button>
+      );
+    }
+
     return (
       <a
         href={action.href}

@@ -90,6 +90,22 @@ export async function loadScenesFromSupabase(): Promise<ValidatedScene[] | null>
   return report.scenes;
 }
 
+/** Fresh SELECT of one scene config by id (no list cache). */
+export async function loadSceneConfigById(
+  id: string,
+): Promise<ValidatedScene | null> {
+  if (!isSupabaseConfigured()) return null;
+  const { data, error } = await admin()
+    .from(TABLE_SCENES)
+    .select('config')
+    .eq('id', id)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data?.config) return null;
+  const report = parseScenes([data.config]);
+  return report.scenes[0] ?? null;
+}
+
 export async function saveScenesToSupabase(scenes: SceneConfig[]): Promise<void> {
   if (!isSupabaseConfigured()) return;
   const db = admin();

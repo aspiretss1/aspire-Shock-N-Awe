@@ -289,24 +289,21 @@ export type SceneItem =
  * Placement of an item within one particular scene
  * ------------------------------------------------------------------ */
 
-/** A reference to a shared library item, positioned for this scene. */
-export interface PlacedRef {
-  ref: string;
-  placement: Placement;
-  /** Narrow overrides — a different label or hint without forking the item. */
-  override?: Partial<Pick<SceneItemBase, 'label' | 'hint'>>;
-}
-
-/** A one-off item defined inline, positioned for this scene. */
+/**
+ * An item defined inline, positioned for this scene.
+ *
+ * Every item is stored this way — fully inline in `sna_scenes.config`, with
+ * real Supabase Storage URLs for any media field. There is no code-level
+ * item library and no `ref` indirection: that pattern let an item's content
+ * live outside the database, which is exactly what this type refuses to
+ * allow.
+ */
 export type PlacedInline = SceneItem & { placement: Placement };
 
-export type Placed = PlacedRef | PlacedInline;
+export type Placed = PlacedInline;
 
-/** After `resolvePlaced()` has merged library definitions with placements. */
-export type ResolvedItem = SceneItem & { placement: Placement };
-
-export const isPlacedRef = (p: Placed): p is PlacedRef =>
-  (p as PlacedRef).ref !== undefined;
+/** Items are already in placed, inline shape — no resolution step needed. */
+export type ResolvedItem = PlacedInline;
 
 /* ------------------------------------------------------------------ *
  * Scenes
@@ -363,6 +360,13 @@ export interface SceneSeo {
   schema?: 'WebPage' | 'Course' | 'Product' | 'CollectionPage';
 }
 
+/** Shared AspireTSS chrome applied to every letter in the scene. */
+export interface LetterBrand {
+  headerSrc?: string;
+  footerSrc?: string;
+  footerText?: string;
+}
+
 export interface SceneConfig {
   /** IMMUTABLE identity. Analytics, scene graph and library refs use this. */
   id: string;
@@ -380,6 +384,9 @@ export interface SceneConfig {
   };
 
   stage: SceneStage;
+
+  /** Header/footer for all letter items (Setup-configurable). */
+  letterBrand?: LetterBrand;
 
   chrome?: 'full' | 'minimal' | 'none';
   banner?: { text: string; cta: { label: string; href: string } };

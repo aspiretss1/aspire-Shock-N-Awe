@@ -1,6 +1,5 @@
 import { parseScenes } from '../schema';
 import type { ResolvedScene, SceneConfig, SceneRoute, SiteKey } from '../types';
-import { resolvePlaced } from './resolve';
 import {
   getById as storeGetById,
   getByRoute as storeGetByRoute,
@@ -45,7 +44,7 @@ export const jsonSource: SceneSource = {
       return {
         config: hit.config,
         route: hit.route,
-        items: resolvePlaced(hit.config.items),
+        items: hit.config.items,
       };
     }
 
@@ -54,7 +53,7 @@ export const jsonSource: SceneSource = {
         r => r.site === site && r.slug === slug && r.status === 'live',
       );
       if (route) {
-        return { config, route, items: resolvePlaced(config.items) };
+        return { config, route, items: config.items };
       }
     }
     return null;
@@ -66,14 +65,14 @@ export const jsonSource: SceneSource = {
       if (!config) return null;
       const route = config.routes.find(r => r.site === site && r.status === 'live');
       if (!route) return null;
-      return { config, route, items: resolvePlaced(config.items) };
+      return { config, route, items: config.items };
     }
 
     const config = (await loadRemote()).find(s => s.id === id);
     if (!config) return null;
     const route = config.routes.find(r => r.site === site && r.status === 'live');
     if (!route) return null;
-    return { config, route, items: resolvePlaced(config.items) };
+    return { config, route, items: config.items };
   },
 
   async allLiveRoutes(): Promise<SceneRoute[]> {

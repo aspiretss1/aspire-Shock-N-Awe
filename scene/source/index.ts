@@ -18,5 +18,4 @@ export function sceneSource(): SceneSource {
 }
 
 export type { SceneSource } from './types';
-export { resolvePlaced } from './resolve';
 export { invalidateSceneCache } from './store';

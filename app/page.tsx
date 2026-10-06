@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
+import { BrandMark } from 'components/BrandMark';
 import { DashboardLink } from 'components/DashboardLink';
 import { LogoutButton } from 'components/LogoutButton';
 import { Button } from 'components/ui/Button';
@@ -33,17 +34,8 @@ export default async function Home() {
 
   return (
     <main className="mx-auto max-w-3xl px-6 py-16">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--brand-accent)]">
-            {site.name}
-          </p>
-          <h1 className="mt-3 text-3xl font-semibold tracking-tight">Live scenes</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Interactive desks and boards on this brand. Open Setup to assign a
-            scene to SAT and Aspire.
-          </p>
-        </div>
+      <div className="mb-8 flex items-center justify-between gap-4">
+        <BrandMark />
         <div className="flex items-center gap-2">
           <Button asChild>
             <Link href="/setup">Setup</Link>
@@ -51,6 +43,16 @@ export default async function Home() {
           <DashboardLink />
           <LogoutButton />
         </div>
+      </div>
+      <div>
+        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--brand-accent)]">
+          {site.name}
+        </p>
+        <h1 className="mt-3 text-3xl font-semibold tracking-tight">Live scenes</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Interactive desks and boards on this brand. Open Setup to assign a
+          scene to SAT and Aspire.
+        </p>
       </div>
 
       <ul className="mt-10 space-y-2">

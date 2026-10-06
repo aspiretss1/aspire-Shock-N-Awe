@@ -2,14 +2,8 @@ import { revalidatePath } from 'next/cache';
 import { NextResponse } from 'next/server';
 
 import { setupAuthorized, setupDeny, setupFail } from 'scene/setup/guard';
-import {
-  create,
-  getById,
-  isRemoteSource,
-  list,
-  remove,
-  update,
-} from 'scene/source/store';
+import { getById, isRemoteSource, list } from 'scene/source/store';
+import { create, remove, update } from 'scene/source/storeWrite';
 import { isSupabaseConfigured } from 'scene/source/supabase';
 import type { SceneConfig } from 'scene/types';
 

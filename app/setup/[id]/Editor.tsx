@@ -21,9 +21,8 @@ import {
   withBrandRoute,
   type BrandInfo,
 } from 'scene/setup/client';
-import { resolvePlaced } from 'scene/source/resolve';
-import { isPlacedRef } from 'scene/types';
 import type {
+  CardItem,
   FreeformPlacement,
   Placed,
   PlacedInline,
@@ -38,6 +37,117 @@ const FIELD =
 const LABEL = 'mb-1 block text-xs font-medium text-muted-foreground';
 const FOLD_SUMMARY =
   'cursor-pointer text-sm font-semibold uppercase tracking-wider text-muted-foreground';
+
+const CARD_SOCIAL_KNOWN = new Set(['linkedin', 'email']);
+
+function cardSocialHref(
+  social: CardItem['social'] | undefined,
+  network: string,
+): string {
+  const key = network.toLowerCase();
+  return social?.find(s => s.network.toLowerCase() === key)?.href ?? '';
+}
+
+function withCardSocial<T extends CardItem>(
+  item: T,
+  network: string,
+  href: string,
+): T {
+  const key = network.toLowerCase();
+  const rest = (item.social ?? []).filter(s => s.network.toLowerCase() !== key);
+  const trimmed = href.trim();
+  const social = trimmed
+    ? [
+        ...rest,
+        {
+          network:
+            key === 'linkedin' ? 'linkedin' : key === 'email' ? 'email' : network,
+          href: trimmed,
+        },
+      ]
+    : rest;
+  return { ...item, social: social.length ? social : undefined };
+}
+
+function CardSocialExtras<T extends CardItem>({
+  item,
+  onChange,
+}: {
+  item: T;
+  onChange: (item: T) => void;
+}) {
+  const [network, setNetwork] = useState('');
+  const [href, setHref] = useState('');
+  const known = (item.social ?? []).filter(s =>
+    CARD_SOCIAL_KNOWN.has(s.network.toLowerCase()),
+  );
+  const extras = (item.social ?? []).filter(
+    s => !CARD_SOCIAL_KNOWN.has(s.network.toLowerCase()),
+  );
+
+  function setExtras(next: { network: string; href: string }[]) {
+    const social = [...known, ...next.filter(s => s.network.trim() && s.href.trim())];
+    onChange({ ...item, social: social.length ? social : undefined });
+  }
+
+  return (
+    <div className="space-y-2">
+      {extras.map((s, i) => (
+        <div key={`${s.network}-${s.href}-${i}`} className="flex items-end gap-2">
+          <div className="min-w-0 flex-1">
+            <label className={LABEL}>Network</label>
+            <input className={FIELD} value={s.network} readOnly />
+          </div>
+          <div className="min-w-0 flex-[1.4]">
+            <label className={LABEL}>Href</label>
+            <input className={FIELD} value={s.href} readOnly />
+          </div>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => setExtras(extras.filter((_, j) => j !== i))}
+          >
+            Remove
+          </Button>
+        </div>
+      ))}
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <label className={LABEL}>Extra network</label>
+          <input
+            className={FIELD}
+            value={network}
+            placeholder="x, github…"
+            onChange={e => setNetwork(e.target.value)}
+          />
+        </div>
+        <div>
+          <label className={LABEL}>Extra href</label>
+          <input
+            className={FIELD}
+            value={href}
+            placeholder="https://…"
+            onChange={e => setHref(e.target.value)}
+          />
+        </div>
+      </div>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        disabled={!network.trim() || !href.trim()}
+        onClick={() => {
+          setExtras([...extras, { network: network.trim(), href: href.trim() }]);
+          setNetwork('');
+          setHref('');
+        }}
+      >
+        Add link
+      </Button>
+    </div>
+  );
+}
 
 function FileField({
   sceneId,
@@ -146,7 +256,7 @@ function isSetupKind(kind: string): kind is SetupKind {
 }
 
 function placedKey(item: Placed, i: number) {
-  return isPlacedRef(item) ? `ref:${item.ref}:${i}` : `${item.id}:${i}`;
+  return `${item.id}:${i}`;
 }
 
 function asFreeform(p: Placed['placement']): FreeformPlacement {
@@ -244,10 +354,7 @@ export function Editor({
   all: { id: string; label: string }[];
 }) {
   const router = useRouter();
-  const [scene, setScene] = useState<SceneConfig>(() => ({
-    ...initial,
-    items: resolvePlaced(initial.items),
-  }));
+  const [scene, setScene] = useState<SceneConfig>(initial);
   const [selected, setSelected] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -263,7 +370,7 @@ export function Editor({
     setBusy(true);
     try {
       const next = await saveScene(scene);
-      setScene({ ...next, items: resolvePlaced(next.items) });
+      setScene(next);
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'save failed');
@@ -325,6 +432,7 @@ export function Editor({
         <div className="space-y-8">
           <UrlSection scene={scene} brands={brands} onChange={setScene} />
           <AnatomySection scene={scene} all={all} onChange={setScene} />
+          <LetterBrandSection scene={scene} onChange={setScene} />
           <ItemsSection
             scene={scene}
             all={all}
@@ -636,6 +744,111 @@ function AnatomySection({
   );
 }
 
+function LetterBrandSection({
+  scene,
+  onChange,
+}: {
+  scene: SceneConfig;
+  onChange: (s: SceneConfig) => void;
+}) {
+  const brand = scene.letterBrand;
+
+  return (
+    <Fold title="Letter header & footer (all letters)">
+      <div className="space-y-3 rounded-xl border bg-card p-4">
+        <p className="text-sm text-muted-foreground">
+          Shown on every letter in this scene and in letter PDF downloads.
+        </p>
+        <FileField
+          sceneId={scene.id}
+          kind="image"
+          label="Header image"
+          value={brand?.headerSrc}
+          onUploaded={src =>
+            onChange({
+              ...scene,
+              letterBrand: { ...brand, headerSrc: src },
+            })
+          }
+        />
+        <div>
+          <label className={LABEL}>Header image URL</label>
+          <input
+            className={FIELD}
+            value={brand?.headerSrc ?? ''}
+            placeholder="/logo.png or https://…"
+            onChange={e =>
+              onChange({
+                ...scene,
+                letterBrand: {
+                  ...brand,
+                  headerSrc: e.target.value.trim() || undefined,
+                },
+              })
+            }
+          />
+        </div>
+        <FileField
+          sceneId={scene.id}
+          kind="image"
+          label="Footer image"
+          value={brand?.footerSrc}
+          onUploaded={src =>
+            onChange({
+              ...scene,
+              letterBrand: { ...brand, footerSrc: src },
+            })
+          }
+        />
+        <div>
+          <label className={LABEL}>Footer image URL</label>
+          <input
+            className={FIELD}
+            value={brand?.footerSrc ?? ''}
+            placeholder="https://…"
+            onChange={e =>
+              onChange({
+                ...scene,
+                letterBrand: {
+                  ...brand,
+                  footerSrc: e.target.value.trim() || undefined,
+                },
+              })
+            }
+          />
+        </div>
+        <div>
+          <label className={LABEL}>Footer text</label>
+          <textarea
+            className={cn(FIELD, 'min-h-[3.5rem]')}
+            value={brand?.footerText ?? ''}
+            placeholder="AspireTSS · address · confidentiality line"
+            onChange={e =>
+              onChange({
+                ...scene,
+                letterBrand: {
+                  ...brand,
+                  footerText: e.target.value || undefined,
+                },
+              })
+            }
+          />
+        </div>
+        {(brand?.headerSrc || brand?.footerSrc || brand?.footerText) && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => onChange({ ...scene, letterBrand: undefined })}
+          >
+            Clear letter brand
+          </Button>
+        )}
+      </div>
+    </Fold>
+  );
+}
+
 function ItemsSection({
   scene,
   all,
@@ -679,7 +892,7 @@ function ItemsSection({
         <ul className="mt-3 space-y-1">
             {scene.items.map((it, i) => {
               const key = placedKey(it, i);
-              const label = isPlacedRef(it) ? `library:${it.ref}` : it.label;
+              const label = it.label;
               return (
                 <li key={key}>
                   <button
@@ -732,18 +945,6 @@ function ItemFields({
   const place = asFreeform(item.placement);
   const setPlace = (patch: Partial<FreeformPlacement>) =>
     onChange({ ...item, placement: { ...place, ...patch } });
-
-  if (isPlacedRef(item)) {
-    return (
-      <div className="mt-4 space-y-3 rounded-xl border bg-card p-4">
-        <p className="text-sm">Library item `{item.ref}` — placement only.</p>
-        <PlaceFields place={place} order={order} onChange={setPlace} />
-        <Button variant="ghost" size="sm" onClick={onRemove}>
-          Remove
-        </Button>
-      </div>
-    );
-  }
 
   const kind = item.kind;
 
@@ -838,7 +1039,17 @@ function ItemFields({
           kind={item.kind}
           label={item.kind === 'pdf' ? 'PDF' : 'Image'}
           value={item.src}
-          onUploaded={src => onChange({ ...item, src })}
+          onUploaded={src =>
+            onChange({
+              ...item,
+              src,
+              // Keep the separate "Download file" field (if present) from
+              // drifting out of sync with the newly-uploaded src — a stale
+              // download.href next to a fresh src is exactly what caused
+              // PDFs to 404 after a re-upload.
+              download: item.download ? { ...item.download, href: src } : item.download,
+            })
+          }
         />
       )}
       {item.kind === 'auto' && (
@@ -1035,6 +1246,37 @@ function ItemFields({
                 })
               }
             />
+          </div>
+          <div className="space-y-2 rounded-lg border border-dashed p-3">
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Social links
+            </p>
+            <div>
+              <label className={LABEL}>LinkedIn</label>
+              <input
+                className={FIELD}
+                value={cardSocialHref(item.social, 'linkedin')}
+                placeholder="https://linkedin.com/in/…"
+                onChange={e => onChange(withCardSocial(item, 'linkedin', e.target.value))}
+              />
+            </div>
+            <div>
+              <label className={LABEL}>Email link</label>
+              <input
+                className={FIELD}
+                value={cardSocialHref(item.social, 'email')}
+                placeholder={
+                  item.person.email
+                    ? `mailto:${item.person.email} (default)`
+                    : 'mailto:… (optional override)'
+                }
+                onChange={e => onChange(withCardSocial(item, 'email', e.target.value))}
+              />
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                Optional. Leave blank to use mailto from the Email field above.
+              </p>
+            </div>
+            <CardSocialExtras item={item} onChange={onChange} />
           </div>
           <div>
             <label className={LABEL}>vCard href</label>
@@ -1300,7 +1542,7 @@ function StagePreview({
         {scene.items.map((item, i) => {
           const p = asFreeform(item.placement);
           const key = placedKey(item, i);
-          const label = isPlacedRef(item) ? item.ref : item.label;
+          const label = item.label;
           return (
             <button
               key={key}

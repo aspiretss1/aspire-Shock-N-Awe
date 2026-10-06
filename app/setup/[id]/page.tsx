@@ -1,6 +1,7 @@
 import { notFound, redirect } from 'next/navigation';
 import Link from 'next/link';
 
+import { BrandMark } from 'components/BrandMark';
 import { DashboardLink } from 'components/DashboardLink';
 import { LogoutButton } from 'components/LogoutButton';
 import { isAdmin } from 'scene/auth/session';
@@ -34,9 +35,12 @@ export default async function EditScenePage({
   return (
     <main className="mx-auto max-w-6xl px-6 py-10">
       <div className="mb-6 flex items-center justify-between gap-4">
-        <Link href="/setup" className="text-sm text-muted-foreground hover:text-foreground">
-          ← Scenes
-        </Link>
+        <div className="flex items-center gap-4">
+          <BrandMark href="/setup" />
+          <Link href="/setup" className="text-sm text-muted-foreground hover:text-foreground">
+            ← Scenes
+          </Link>
+        </div>
         <div className="flex items-center gap-2">
           <DashboardLink />
           <LogoutButton />

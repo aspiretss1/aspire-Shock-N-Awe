@@ -17,6 +17,10 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     metadataBase: new URL(site.url),
     title: { default: site.name, template: `%s · ${site.name}` },
+    icons: {
+      icon: '/logo.png',
+      apple: '/logo.png',
+    },
   };
 }
 

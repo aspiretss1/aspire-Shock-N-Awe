@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
+import { BrandMark } from 'components/BrandMark';
 import { DashboardLink } from 'components/DashboardLink';
 import { LogoutButton } from 'components/LogoutButton';
 import { Button } from 'components/ui/Button';
@@ -26,16 +27,8 @@ export default async function SetupPage() {
 
   return (
     <main className="mx-auto max-w-3xl px-6 py-12">
-      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--brand-accent)]">
-        Setup
-      </p>
-      <div className="mt-2 flex items-end justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-semibold tracking-tight">Scenes</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Assign each scene to SAT and Aspire. Stored in Supabase.
-          </p>
-        </div>
+      <div className="mb-6 flex items-center justify-between gap-4">
+        <BrandMark href="/setup" />
         <div className="flex items-center gap-2">
           <Button asChild>
             <Link href="/">Index</Link>
@@ -43,6 +36,15 @@ export default async function SetupPage() {
           <DashboardLink />
           <LogoutButton />
         </div>
+      </div>
+      <div>
+        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--brand-accent)]">
+          Setup
+        </p>
+        <h1 className="mt-2 text-3xl font-semibold tracking-tight">Scenes</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Assign each scene to SAT and Aspire. Stored in Supabase.
+        </p>
       </div>
       <SetupList scenes={scenes} brands={brands} />
     </main>

@@ -12,6 +12,7 @@ import { isSafeUrl } from './schema';
 import type { CardItem, LetterItem, ResolvedItem } from './types';
 import { letterText } from './letterTokens';
 import { useNearViewport } from './useNearViewport';
+import { useScene } from './useSceneItem';
 import { WebsiteShot } from './websiteShot';
 
 /**
@@ -235,6 +236,9 @@ function AudioMini() {
 }
 
 function LetterMini({ item }: { item: LetterItem }) {
+  const { config } = useScene();
+  const brand = config.letterBrand;
+  const headerSrc = brand?.headerSrc || item.letterheadSrc;
   const wrapRef = useRef<HTMLDivElement>(null);
   const paperRef = useRef<HTMLElement>(null);
   const [scale, setScale] = useState(0.2);
@@ -265,7 +269,7 @@ function LetterMini({ item }: { item: LetterItem }) {
       cancelAnimationFrame(frame);
       obs.disconnect();
     };
-  }, [item.bodyMdx, item.letterheadSrc, item.signature]);
+  }, [item.bodyMdx, item.letterheadSrc, item.signature, brand?.headerSrc, brand?.footerSrc, brand?.footerText]);
 
   return (
     <div ref={wrapRef} className="pointer-events-none absolute inset-0 overflow-hidden">
@@ -279,9 +283,9 @@ function LetterMini({ item }: { item: LetterItem }) {
         }}
       >
         <div className="flex flex-col px-10 py-9">
-          {item.letterheadSrc && (
+          {headerSrc && (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={item.letterheadSrc} alt="" className="mb-6 h-9 w-auto" />
+            <img src={headerSrc} alt="" className="mb-6 h-9 w-auto" />
           )}
           {paragraphs.map((p, i) => (
             <p key={i} className="mb-3 whitespace-pre-line text-[12px] leading-relaxed">
@@ -289,13 +293,26 @@ function LetterMini({ item }: { item: LetterItem }) {
             </p>
           ))}
           {item.signature && (
-            <footer className="mt-4 border-t border-black/10 pt-4">
+            <div className="mt-4 border-t border-black/10 pt-4">
               {item.signature.image && (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={item.signature.image} alt="" className="mb-2 h-10 w-auto" />
               )}
               <p className="text-[12px] font-semibold">{item.signature.name}</p>
               <p className="text-[10px] text-[#5c626c]">{item.signature.title}</p>
+            </div>
+          )}
+          {(brand?.footerSrc || brand?.footerText) && (
+            <footer className="mt-4 border-t border-black/10 pt-4">
+              {brand.footerSrc && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={brand.footerSrc} alt="" className="mb-2 h-8 w-auto" />
+              )}
+              {brand.footerText && (
+                <p className="whitespace-pre-line text-[9px] leading-relaxed text-[#5c626c]">
+                  {brand.footerText}
+                </p>
+              )}
             </footer>
           )}
         </div>

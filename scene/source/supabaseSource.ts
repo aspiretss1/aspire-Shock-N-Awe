@@ -1,4 +1,3 @@
-import { resolvePlaced } from './resolve';
 import {
   getById as storeGetById,
   getByRoute as storeGetByRoute,
@@ -20,7 +19,7 @@ export const supabaseSource: SceneSource = {
     return {
       config: hit.config,
       route: hit.route,
-      items: resolvePlaced(hit.config.items),
+      items: hit.config.items,
     };
   },
 
@@ -29,7 +28,7 @@ export const supabaseSource: SceneSource = {
     if (!config) return null;
     const route = config.routes.find(r => r.site === site && r.status === 'live');
     if (!route) return null;
-    return { config, route, items: resolvePlaced(config.items) };
+    return { config, route, items: config.items };
   },
 
   async allLiveRoutes() {

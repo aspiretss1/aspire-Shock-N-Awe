@@ -4,62 +4,40 @@ import {
   ArrowRight,
   Download,
   ExternalLink,
-  FileText,
-  Headphones,
-  IdCard,
-  Layers,
-  ImageIcon,
-  Mail,
-  Monitor,
-  Sparkles,
-  PlaySquare,
-  SquarePen,
 } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import type { ComponentType } from 'react';
 
 import { resolveAction } from './actions';
+import {
+  aspirePdfFilename,
+  pdfHrefForItem,
+  triggerDownload,
+  triggerItemDownload,
+} from './downloadFile';
 import { useHrefSize } from './fileSize';
 import { track } from './track';
-import type { ResolvedItem, SceneItemKind } from './types';
+import type { ResolvedItem } from './types';
 import { KIND_LABEL, useScene } from './useSceneItem';
 
-/**
- * The mobile presentation of a freeform scene.
- *
- * NOT a degraded fallback. A desk scaled to a 390px phone gives you 20px tap
- * targets stacked on top of each other; for most visitors arriving from
- * LinkedIn or email, this list IS the experience. Same items, same viewers,
- * same analytics — and the stage image is never downloaded.
- */
+const HotspotPreview = dynamic(
+  () => import('./HotspotPreview').then(m => ({ default: m.HotspotPreview })),
+  { ssr: false },
+);
 
-const ICONS: Record<SceneItemKind, ComponentType<{ className?: string }>> = {
-  auto: Sparkles,
-  image: ImageIcon,
-  pdf: FileText,
-  pages: Layers,
-  flipbook: Layers,
-  embed: Monitor,
-  scene: ArrowRight,
-  link: ExternalLink,
-  download: Download,
-  video: PlaySquare,
-  audio: Headphones,
-  card: IdCard,
-  letter: Mail,
-  form: SquarePen,
-};
+/**
+ * Mobile freeform scene: same items as the desk, shown as preview + label rows.
+ */
 
 function Row({ item }: { item: ResolvedItem }) {
   const { config, open, hrefForScene } = useScene();
-  const Icon = ICONS[item.kind];
   const action = resolveAction(item, hrefForScene);
   const sizeLabel = useHrefSize(item.download?.href);
 
   const body = (
     <>
-      <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-[var(--brand-accent)]/12 text-[var(--brand-accent)]">
-        <Icon className="size-5" />
+      <span className="scene-mobile-thumb relative shrink-0 overflow-hidden rounded-lg bg-neutral-900">
+        <HotspotPreview item={item} />
       </span>
       <span className="min-w-0 flex-1">
         <span className="block truncate font-medium">{item.label}</span>
@@ -70,6 +48,8 @@ function Row({ item }: { item: ResolvedItem }) {
       </span>
       {action.type === 'navigate' && !action.internal ? (
         <ExternalLink className="size-4 shrink-0 text-muted-foreground" />
+      ) : action.type === 'download' ? (
+        <Download className="size-4 shrink-0 text-muted-foreground" />
       ) : (
         <ArrowRight className="size-4 shrink-0 text-muted-foreground" />
       )}
@@ -77,10 +57,8 @@ function Row({ item }: { item: ResolvedItem }) {
   );
 
   const className =
-    'flex w-full items-center gap-3 rounded-xl border bg-card p-3 text-left transition active:scale-[0.99] hover:border-[var(--brand-accent)]';
+    'flex w-full items-center gap-3 rounded-xl border bg-card p-2.5 text-left transition active:scale-[0.99] hover:border-[var(--brand-accent)]';
 
-  // Same decision as the desk hotspot, so a visitor on a phone gets exactly
-  // the behaviour a visitor on a laptop gets.
   if (action.type === 'navigate') {
     return (
       <Link
@@ -106,17 +84,34 @@ function Row({ item }: { item: ResolvedItem }) {
   }
 
   if (action.type === 'download') {
+    const asPdf =
+      Boolean(pdfHrefForItem(item)) ||
+      /\.pdf($|\?)/i.test(action.href) ||
+      Boolean(action.filename?.toLowerCase().endsWith('.pdf'));
+    const filename = asPdf
+      ? aspirePdfFilename(item.label)
+      : action.filename || 'download';
     return (
-      <a
-        href={action.href}
-        download={action.filename}
+      <button
+        type="button"
         className={className}
-        onClick={() =>
-          track({ event: 'scene_download', sceneId: config.id, itemId: item.id })
-        }
+        onClick={() => {
+          void (async () => {
+            if (asPdf) {
+              await triggerItemDownload({
+                sceneId: config.id,
+                itemId: item.id,
+                filename,
+              });
+            } else {
+              await triggerDownload(action.href, filename);
+            }
+            track({ event: 'scene_download', sceneId: config.id, itemId: item.id });
+          })().catch(err => console.error('[scene] download failed', err));
+        }}
       >
         {body}
-      </a>
+      </button>
     );
   }
 

@@ -1,11 +1,10 @@
-import { resolvePlaced } from './resolve';
 import { sceneSource } from './index';
-import type { SceneConfig, SiteKey, TrailNode } from '../types';
+import type { ResolvedItem, SceneConfig, SiteKey, TrailNode } from '../types';
 
 export interface NavigatedScene {
   config: SceneConfig;
   route: SceneConfig['routes'][number];
-  items: ReturnType<typeof resolvePlaced>;
+  items: ResolvedItem[];
   links: Record<string, string>;
   trail: TrailNode[];
 }

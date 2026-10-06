@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 import { adminRoleFor, createMiddlewareAuth, safeNextPath } from 'scene/auth/shared';
-import { slugRedirects } from 'scene/configs';
+import { sceneSource } from 'scene/source';
 import { SITES, siteFromHost } from 'scene/sites';
 import type { SiteKey } from 'scene/types';
 
@@ -11,14 +11,13 @@ import type { SiteKey } from 'scene/types';
  *
  *  1. Host  → brand. Passed downstream as `x-site` so server components can
  *     read it without prop-drilling.
- *  2. Old slug → current slug, for scenes in the COMPILED registry.
+ *  2. Old slug → current slug, read from `sna_scenes.routes[].slugHistory`
+ *     in the database — there is no compiled registry to fall back to.
  *  3. Operator paths (`/` and `/setup`) require an admin session.
  *
  * 301 rather than 302 — these are permanent moves and the search equity
  * should transfer.
  */
-
-const REDIRECTS = slugRedirects();
 
 function isOperatorPath(pathname: string) {
   return pathname === '/' || pathname === '/setup' || pathname.startsWith('/setup/');
@@ -60,7 +59,8 @@ export async function middleware(req: NextRequest) {
   const site = forced ?? siteFromHost(req.headers.get('host'));
 
   const slug = req.nextUrl.pathname.replace(/^\/+/, '').replace(/\/+$/, '');
-  const moved = slug ? REDIRECTS[site]?.[slug] : undefined;
+  const redirects = slug ? await sceneSource().redirects() : null;
+  const moved = redirects ? redirects[site]?.[slug] : undefined;
 
   if (moved) {
     const url = req.nextUrl.clone();

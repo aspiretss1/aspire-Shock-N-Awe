@@ -253,11 +253,14 @@ function LetterMini({ item }: { item: LetterItem }) {
       cancelAnimationFrame(frame);
       frame = requestAnimationFrame(() => {
         const paperW = paper.offsetWidth || LETTER_W;
-        const paperH = paper.scrollHeight;
-        if (paperW <= 0 || paperH <= 0 || wrap.clientWidth <= 0 || wrap.clientHeight <= 0) {
+        if (paperW <= 0 || wrap.clientWidth <= 0 || wrap.clientHeight <= 0) {
           return;
         }
-        const next = Math.min(wrap.clientWidth / paperW, wrap.clientHeight / paperH);
+        // Fit by width only, like a real page thumbnail — a long letter's
+        // extra pages get clipped by the wrapper's `overflow-hidden`
+        // instead of the whole thing being squeezed down to fit. Clicking
+        // the hotspot opens the full letter in the modal.
+        const next = wrap.clientWidth / paperW;
         setScale(s => (Math.abs(s - next) < 0.008 ? s : next));
       });
     };

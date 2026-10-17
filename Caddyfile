@@ -1,0 +1,8 @@
+84.46.241.116 {
+	tls internal
+	reverse_proxy web:5000
+}
+
+shockandawe.aspiretss.com {
+	reverse_proxy web:5000
+}

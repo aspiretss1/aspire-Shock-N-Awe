@@ -52,7 +52,12 @@ export const SITES: Record<SiteKey, SiteConfig> = {
     key: 'aspire',
     name: 'Aspire Tech Services and Solutions',
     url: 'https://aspiretss.com',
-    hosts: ['aspiretss.com', 'www.aspiretss.com', '*.aspiretss.com'],
+    hosts: [
+      'aspiretss.com',
+      'www.aspiretss.com',
+      '*.aspiretss.com',
+      'shock-n-awe.duckdns.org',
+    ],
     logo: '/logo.png',
     theme: 'aspire',
     gtmId: process.env.NEXT_PUBLIC_GTM_ASPIRE,

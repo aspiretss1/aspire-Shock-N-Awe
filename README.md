@@ -84,9 +84,9 @@ Free-tier caps: 500 MB database, 1 GB file storage, **50 MB max upload**. Keep u
 
 ## Deploy
 
-On a VPS, Compose runs the app behind **Caddy** on host port **5000** (HTTPS). Supabase stays the hosted project (no database in Compose). Host 80/443 may already be in use, so Caddy is published as `5000:5000`. Smoke-test at `https://84.46.241.116:5000` (accept the self-signed cert warning; allow **5000/tcp** in the firewall) with `SCENE_ENGINE_URL=https://84.46.241.116:5000`. When DNS points `shockandawe.aspiretss.com` at the VPS and 80/443 are free, switch Caddy back to standard ports, drop `:5000` from the public URL, and use Let’s Encrypt on the hostname.
+On a VPS, Compose runs the app behind **Caddy** on host port **5000** (HTTPS). Supabase stays the hosted project (no database in Compose). Host 80/443 may already be in use, so Caddy is published as `5000:5000`. Public origin is `https://shock-n-awe.duckdns.org:5000` (DuckDNS A → VPS; accept the self-signed cert warning; allow **5000/tcp** in the firewall) with `SCENE_ENGINE_URL=https://shock-n-awe.duckdns.org:5000`. When 80/443 are free, switch Caddy back to standard ports, drop `:5000` from the public URL, and use Let’s Encrypt on the hostname.
 
-1. Copy [`.env.example`](.env.example) to `.env`. Set URL, service role, publishable key, and `SCENE_ENGINE_URL` to the public origin SAT/Aspire will iframe (`https://84.46.241.116:5000` for IP smoke-test, or `https://shockandawe.aspiretss.com` once DNS and 443 are ready).
+1. Copy [`.env.example`](.env.example) to `.env`. Set URL, service role, publishable key, and `SCENE_ENGINE_URL` to the public origin SAT/Aspire will iframe (`https://shock-n-awe.duckdns.org:5000`).
 2. Run `schema.sql` once on the production Supabase project if it is a new project (includes `app_users`).
 3. `docker compose up -d --build`
 4. Sign in at `/login`, or open Setup from the hub via the [one-time code channel](docs/login-channel.md). Assign scenes **live** in `/setup`.

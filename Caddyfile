@@ -4,12 +4,7 @@
 	auto_https disable_redirects
 }
 
-84.46.241.116 {
-	tls internal
-	reverse_proxy web:5000
-}
-
-shockandawe.aspiretss.com {
+shock-n-awe.duckdns.org {
 	tls internal
 	reverse_proxy web:5000
 }

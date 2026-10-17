@@ -1,10 +1,3 @@
-{
-	http_port 8080
-	https_port 5000
-	auto_https disable_redirects
-}
-
 shock-n-awe.duckdns.org {
-	tls internal
 	reverse_proxy web:5000
 }

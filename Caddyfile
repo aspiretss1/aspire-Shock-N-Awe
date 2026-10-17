@@ -1,3 +1,10 @@
+# Snippet for the VPS *host* Caddy (already on :80/:443).
+# Copy this site block into /etc/caddy/Caddyfile (or import this file), then:
+#   sudo caddy validate --config /etc/caddy/Caddyfile
+#   sudo systemctl reload caddy
+#
+# Do not run a second Caddy in Compose — that fights for 80/443.
+
 shock-n-awe.duckdns.org {
-	reverse_proxy web:5000
+	reverse_proxy 127.0.0.1:5000
 }

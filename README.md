@@ -84,15 +84,21 @@ Free-tier caps: 500 MB database, 1 GB file storage, **50 MB max upload**. Keep u
 
 ## Deploy
 
-On a VPS, Compose runs the app behind **Caddy** on host ports **80/443** (Let’s Encrypt HTTPS). Supabase stays the hosted project (no database in Compose). Free **80** and **443** first if another process (including a host Caddy) already owns them. Public origin is `https://shock-n-awe.duckdns.org` (DuckDNS A → VPS; allow **80/tcp** and **443/tcp** in the firewall) with `SCENE_ENGINE_URL=https://shock-n-awe.duckdns.org`.
+On a VPS, Compose runs only the **web** app on `127.0.0.1:5000`. The **host** Caddy (already on **80/443**) terminates Let’s Encrypt HTTPS and reverse-proxies to that port — same pattern as your other services. Supabase stays the hosted project (no database in Compose). Public origin is `https://shock-n-awe.duckdns.org` with `SCENE_ENGINE_URL=https://shock-n-awe.duckdns.org`.
 
-1. Copy [`.env.example`](.env.example) to `.env`. Set URL, service role, publishable key, and `SCENE_ENGINE_URL` to the public origin SAT/Aspire will iframe (`https://shock-n-awe.duckdns.org`).
+1. Copy [`.env.example`](.env.example) to `.env`. Set URL, service role, publishable key, and `SCENE_ENGINE_URL=https://shock-n-awe.duckdns.org`.
 2. Run `schema.sql` once on the production Supabase project if it is a new project (includes `app_users`).
-3. `docker compose up -d --build`
-4. Sign in at `/login`, or open Setup from the hub via the [one-time code channel](docs/login-channel.md). Assign scenes **live** in `/setup`.
+3. Stop any old Compose Caddy from this project if it is still around: `docker compose down` then `docker compose up -d --build` (only `web` starts; binds localhost **5000**).
+4. Add the site block from [`Caddyfile`](Caddyfile) to the host Caddy config (usually `/etc/caddy/Caddyfile`), validate, and reload:
+   ```bash
+   sudo caddy validate --config /etc/caddy/Caddyfile
+   sudo systemctl reload caddy
+   ```
+5. Open `https://shock-n-awe.duckdns.org`. Sign in at `/login`, or open Setup from the hub via the [one-time code channel](docs/login-channel.md). Assign scenes **live** in `/setup`.
 
 ```
-docker compose up -d --build    # Caddy :80/:443 → web:5000
+docker compose up -d --build    # web on 127.0.0.1:5000
+# host Caddy: shock-n-awe.duckdns.org → 127.0.0.1:5000 (Let’s Encrypt)
 ```
 
 The hub must not put JWTs in the page. It mints a one-time code on the server, then redirects the browser. Full contract: [`docs/login-channel.md`](docs/login-channel.md).
@@ -161,8 +167,8 @@ Shock-and-Awe/
 ├── middleware.ts             host → brand; old slug → 301
 ├── scene/                    engine, Setup client, Supabase source, host helper
 ├── Dockerfile                production image, port 5000
-├── docker-compose.yml        VPS: Caddy :80/:443 → web:5000
-├── Caddyfile                 Let’s Encrypt for shock-n-awe.duckdns.org
+├── docker-compose.yml        VPS: web on 127.0.0.1:5000
+├── Caddyfile                 Host Caddy site snippet (TLS + proxy)
 ├── supabase/schema.sql       tables, RPC, buckets
 ├── docs/ui.md                how to use Setup
 ├── docs/login-channel.md     hub one-time code login
